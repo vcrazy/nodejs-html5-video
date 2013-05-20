@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>html5 audio & video</title>
+		<meta charset="utf-8" />
+		<style>
+/*			canvas {display: none;}*/
+		</style>
+		<script src="http://localhost:8070/socket.io/socket.io.js"></script>
+		<script>
+			var socket = io.connect('http://localhost:8070');
+			socket.emit('role', {role: 'server'});
+		</script>
+	</head>
+	<body>
+		<video autoplay></video>
+		<canvas></canvas>
+		<button onclick="javascript: init(this);">Start</button>
+		<script>
+			navigator.getUserMedia = navigator.webkitGetUserMedia || navigator.getUserMedia;
+			window.URL = window.URL || window.webkitURL;
+
+			var video = document.getElementsByTagName('video')[0];
+
+			var canvas = document.getElementsByTagName('canvas')[0];
+			var ctx = canvas.getContext('2d');
+
+			interval = 333;
+			interval_handle = null;
+
+			function change_interval(new_interval){
+				interval = new_interval;
+				clearInterval(interval_handle);
+				capture();
+			}
+
+			function gotStream(stream){
+				if(window.URL){
+					video.src = window.URL.createObjectURL(stream);
+				}else{
+					video.src = stream; // Opera.
+				}
+
+				video.onerror = function(){
+					stream.stop();
+				};
+
+				refreshCanvas();
+			}
+	
+			function refreshCanvas(){
+				if(!video.videoWidth){
+					setTimeout(refreshCanvas, 50);
+				}else{
+					canvas.width = video.videoWidth;
+					canvas.height = video.videoHeight;
+				}
+			}
+
+			function capture(){
+				interval_handle = setInterval(function() {
+					ctx.drawImage(video, 0, 0);
+					socket.emit('img', {
+						data: canvas.toDataURL('image/png')
+					});
+				}, interval); // = 1000 / fps
+			}
+
+			function init(el){
+				if(!navigator.getUserMedia){
+					return;
+				}
+
+				navigator.getUserMedia({video: true, audio: true}, gotStream);
+
+				capture();
+			}
+		</script>
+	</body>
+</html>
