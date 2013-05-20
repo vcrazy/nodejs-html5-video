@@ -13,6 +13,16 @@ io.sockets.on('connection', function (socket) {
 	});
 
 	socket.on('img', function (data) {
-		roles.client.emit('img', data);
+		if(roles.client){
+			roles.client.emit('img', data);
+		}
+	});
+
+	socket.on('disconnect', function () {
+		if(socket.id == roles.client){
+			delete roles.client;
+		}else if(socket.id == roles.server){
+			delete roles.server;
+		}
 	});
 });
